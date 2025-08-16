@@ -5,10 +5,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs/promises';
-import pdf from 'pdf-parse'; // <-- THE ONLY CHANGE IS ON THIS LINE
-
+import pdf from 'pdf-parse';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
+import { EventsGateway } from '../events/events.gateway'; // <-- Import Gateway
 
 @Processor('file-processing')
 export class DocumentsProcessor extends WorkerHost {
@@ -17,6 +17,7 @@ export class DocumentsProcessor extends WorkerHost {
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
+    private eventsGateway: EventsGateway, // <-- Inject Gateway
   ) {
     super();
   }
@@ -31,61 +32,54 @@ export class DocumentsProcessor extends WorkerHost {
     this.logger.log(`Starting processing for job ${job.id}...`);
     const { documentId, filePath } = job.data;
 
+    const updateProgress = async (progress: number, status: 'PROCESSING' | 'DONE' | 'FAILED') => {
+      await job.updateProgress(progress);
+      await this.prisma.document.update({ where: { id: documentId }, data: { status, progress } });
+      this.eventsGateway.sendToAll('documentUpdate', { id: documentId, status, progress });
+    };
+
     try {
-      // 1. Update document status to PROCESSING
-      await this.prisma.document.update({
-        where: { id: documentId },
-        data: { status: 'PROCESSING' },
-      });
-
-      // 2. Load the PDF from the file path
+      await updateProgress(5, 'PROCESSING');
+      
       const fileBuffer = await fs.readFile(filePath);
-      const pdfData = await pdf(fileBuffer); // <-- This line will now work correctly
+      await updateProgress(10, 'PROCESSING');
 
-      // 3. Split the text into manageable chunks
-      const textSplitter = new RecursiveCharacterTextSplitter({
-        chunkSize: 1000,
-        chunkOverlap: 200,
-      });
+      const pdfData = await pdf(fileBuffer);
+      await updateProgress(20, 'PROCESSING');
+      
+      const textSplitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000, chunkOverlap: 200 });
       const chunks = await textSplitter.splitText(pdfData.text);
       this.logger.log(`Document split into ${chunks.length} chunks.`);
+      await updateProgress(30, 'PROCESSING');
 
-      // 4. Initialize the Google AI Embedding model
       const embeddings = new GoogleGenerativeAIEmbeddings({
         apiKey: this.configService.get<string>('GOOGLE_API_KEY'),
         modelName: 'text-embedding-004',
       });
 
-      // 5. Create an embedding for each chunk and save it to the database
-      for (const chunk of chunks) {
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
         const chunkEmbedding = await embeddings.embedQuery(chunk);
-
+        
         await this.prisma.$executeRaw`
             INSERT INTO "DocumentChunk" (id, content, "embedding", "documentId", "createdAt", "updatedAt")
-            VALUES (
-                gen_random_uuid(), 
-                ${chunk}, 
-                ${'[' + chunkEmbedding.join(',') + ']'}::vector, 
-                ${documentId}, 
-                NOW(), 
-                NOW()
-            );
+            VALUES (gen_random_uuid(), ${chunk}, ${'[' + chunkEmbedding.join(',') + ']'}::vector, ${documentId}, NOW(), NOW());
         `;
+        
+        // Update progress after each chunk is embedded (from 30% to 95%)
+        const progress = 30 + Math.floor((i + 1) / chunks.length * 65);
+        await updateProgress(progress, 'PROCESSING');
       }
 
-      // 6. Update document status to DONE
-      await this.prisma.document.update({
-        where: { id: documentId },
-        data: { status: 'DONE' },
-      });
-
+      await updateProgress(100, 'DONE');
       this.logger.log(`Successfully processed job ${job.id}.`);
+      
+      // Also delete the file from the uploads folder after processing is complete
+      await fs.unlink(filePath);
+
     } catch (error) {
       this.logger.error(`Failed to process job ${job.id}`, error);
-      await this.prisma.document.update({
-        where: { id: documentId },
-        data: { status: 'FAILED' },
-      });
+      await updateProgress(100, 'FAILED');
       throw error;
     }
   }

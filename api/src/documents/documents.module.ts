@@ -5,7 +5,7 @@ import { DocumentsService } from './documents.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { BullModule } from '@nestjs/bullmq';
 import { DocumentsProcessor } from './documents.processor';
-import { MulterModule } from '@nestjs/platform-express'; // <-- NEW IMPORT
+import { EventsModule } from '../events/events.module';
 
 @Module({
   imports: [
@@ -13,10 +13,8 @@ import { MulterModule } from '@nestjs/platform-express'; // <-- NEW IMPORT
     BullModule.registerQueue({
       name: 'file-processing',
     }),
-    // Add this MulterModule configuration
-    MulterModule.register({
-      dest: './uploads',
-    }),
+    EventsModule,
+    // The MulterModule has been removed from here
   ],
   controllers: [DocumentsController],
   providers: [DocumentsService, DocumentsProcessor],

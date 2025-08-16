@@ -2,11 +2,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
-// --- CHANGED IMPORTS ---
 import {
   Dialog,
   DialogContent,
@@ -15,7 +13,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog";
-// ----------------------
 import { Input } from "./ui/input";
 import { UploadCloud } from "lucide-react";
 
@@ -23,15 +20,21 @@ export function UploadButton() {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const router = useRouter();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) setFile(event.target.files[0]);
+    if (event.target.files && event.target.files.length > 0) {
+      setFile(event.target.files[0]);
+    } else {
+      setFile(null);
+    }
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!file) return toast.error("Please select a file first.");
+    if (!file) {
+      toast.error("Please select a file first.");
+      return;
+    }
 
     setIsUploading(true);
     const formData = new FormData();
@@ -39,12 +42,9 @@ export function UploadButton() {
 
     try {
       await axios.post("http://localhost:3000/documents/upload", formData);
-      toast.success("File uploaded successfully! It is now being processed.");
-      // Reset state and close the dialog on success
+      toast.success("File uploaded! Processing has started.");
       setFile(null);
       setIsOpen(false);
-      // Refresh the server components on the page to show the new document
-      router.refresh();
     } catch (error) {
       toast.error("An error occurred during upload.");
     } finally {
@@ -52,7 +52,6 @@ export function UploadButton() {
     }
   };
 
-  // --- CHANGED JSX WRAPPER ---
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -76,5 +75,4 @@ export function UploadButton() {
       </DialogContent>
     </Dialog>
   );
-  // -----------------
 }

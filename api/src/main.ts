@@ -7,8 +7,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    // We now allow an array of origins
-    origin: ['http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003' ], // <-- THE FIX IS HERE
+    // This regular expression allows any localhost port (e.g., 3001, 3002, 3008, etc.)
+    origin: /http:\/\/localhost:\d+/,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });

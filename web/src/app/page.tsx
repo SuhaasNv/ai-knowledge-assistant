@@ -1,31 +1,11 @@
 // web/src/app/page.tsx
+"use client" // <-- Make this a client component to use the store
+
 import { UploadButton } from "@/components/upload-button";
 import { DocumentList } from "@/components/document-list";
 import { DeleteAllButton } from "@/components/delete-all-button";
 
-type Document = {
-  id: string;
-  name: string;
-  status: "PENDING" | "PROCESSING" | "DONE" | "FAILED";
-  createdAt: string;
-};
-
-async function getDocuments(): Promise<Document[]> {
-  try {
-    const res = await fetch("http://localhost:3000/documents", {
-      cache: "no-store",
-    });
-    if (!res.ok) return [];
-    return res.json();
-  } catch (error) {
-    console.error("Error fetching documents:", error);
-    return [];
-  }
-}
-
-export default async function HomePage() {
-  const documents = await getDocuments();
-
+export default function HomePage() {
   return (
     <div className="container mx-auto max-w-3xl py-12">
       <div className="flex flex-col items-center text-center">
@@ -41,9 +21,9 @@ export default async function HomePage() {
           <h2 className="text-2xl font-semibold tracking-tight">
             Your Documents
           </h2>
-          <DeleteAllButton hasDocuments={documents.length > 0} />
+          <DeleteAllButton />
         </div>
-        <DocumentList documents={documents} />
+        <DocumentList />
       </div>
     </div>
   );

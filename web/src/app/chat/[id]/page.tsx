@@ -18,8 +18,9 @@ async function getDocument(id: string): Promise<Document | null> {
   }
 }
 
-export default async function ChatPage({ params }: { params: { id: string } }) {
-  const document = await getDocument(params.id);
+// THE FIX IS IN THE LINE BELOW: We destructure 'id' directly from 'params'
+export default async function ChatPage({ params: { id } }: { params: { id: string } }) {
+  const document = await getDocument(id); // And now we can use 'id' directly
 
   if (!document) {
     return (

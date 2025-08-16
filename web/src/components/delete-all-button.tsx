@@ -5,20 +5,21 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
+import { useDocumentStore } from "@/lib/store"; // <-- Import the store
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Trash2 } from "lucide-react";
 
-export function DeleteAllButton({ hasDocuments }: { hasDocuments: boolean }) {
+export function DeleteAllButton() {
   const [isDeleting, setIsDeleting] = useState(false);
-  const router = useRouter();
+  const documents = useDocumentStore((state) => state.documents); // <-- Get documents from store
 
   const handleDeleteAll = async () => {
     setIsDeleting(true);
     try {
       await axios.delete("http://localhost:3000/documents");
       toast.success("All documents deleted successfully.");
-      router.refresh();
+      // UI will update via WebSocket
     } catch (error) {
       toast.error("Failed to delete all documents.");
     } finally {
@@ -26,7 +27,7 @@ export function DeleteAllButton({ hasDocuments }: { hasDocuments: boolean }) {
     }
   };
 
-  if (!hasDocuments) return null;
+  if (documents.length === 0) return null;
 
   return (
     <AlertDialog>
@@ -38,7 +39,7 @@ export function DeleteAllButton({ hasDocuments }: { hasDocuments: boolean }) {
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-          <AlertDialogDescription>This action cannot be undone. This will permanently delete ALL documents and their processed data.</AlertDialogDescription>
+          <AlertDialogDescription>This action cannot be undone. This will permanently delete ALL documents.</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>

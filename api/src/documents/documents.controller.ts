@@ -10,6 +10,7 @@ import {
   Delete,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer'; // <-- NEW IMPORT
 import { DocumentsService } from './documents.service';
 import { ChatDto } from './dto/chat.dto';
 
@@ -28,7 +29,18 @@ export class DocumentsController {
   }
 
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      // Add the explicit storage configuration back here
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, cb) => {
+          const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+          cb(null, `${randomName}-${file.originalname}`);
+        },
+      }),
+    }),
+  )
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     return this.documentsService.createAndQueueDocument(file);
   }

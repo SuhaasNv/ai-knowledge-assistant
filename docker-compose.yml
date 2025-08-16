@@ -1,33 +1,29 @@
 # docker-compose.yml
 version: '3.8'
-
-# This section defines the services (containers) we want to run
 services:
-  # This is our PostgreSQL database service
   db:
-    image: pgvector/pgvector:pg16  # Use a special Postgres image that includes the pgvector extension for AI
+    image: pgvector/pgvector:pg16
     container_name: ai_assistant_db
-    restart: always  # Always restart the container if it stops
+    restart: always
     environment:
       - POSTGRES_USER=myuser
       - POSTGRES_PASSWORD=mypassword
       - POSTGRES_DB=mydatabase
     ports:
-      - "5432:5432"  # Connect your Mac's port 5432 to the container's port 5432
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # This saves your database data on your Mac's hard drive
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d  # <-- ADD THIS LINE
 
-  # This is our Redis service for background jobs
   redis:
-    image: redis:7  # Use a standard Redis image
+    image: redis:7
     container_name: ai_assistant_redis
     restart: always
     ports:
-      - "6379:6379"  # Connect your Mac's port 6379 to the container's port 6379
+      - "6379:6379"
     volumes:
-      - redis_data:/data # This saves your Redis data on your Mac's hard drive
+      - redis_data:/data
 
-# This section defines the volumes we use to persist data
 volumes:
   postgres_data:
   redis_data:

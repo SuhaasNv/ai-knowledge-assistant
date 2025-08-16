@@ -1,0 +1,41 @@
+// api/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Tracks the overall status of an uploaded document
+model Document {
+  id        String   @id @default(cuid())
+  name      String
+  status    Status   @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // A document is made up of many chunks
+  chunks    DocumentChunk[]
+}
+
+// Stores a piece of text from a document and its AI-generated vector
+model DocumentChunk {
+  id          String   @id @default(cuid())
+  content     String
+  embedding   Unsupported("vector(768)")?
+  documentId  String
+  
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum Status {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}

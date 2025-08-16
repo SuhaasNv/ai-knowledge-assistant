@@ -1,39 +1,48 @@
-# AI Knowledge Base 🧠
+## ⚡ Quick Setup
 
-An intelligent, full-stack application that transforms any PDF document into an interactive chatbot, allowing users to ask questions and receive context-aware answers. This project leverages a modern tech stack and a Retrieval-Augmented Generation (RAG) pipeline to provide accurate, AI-powered insights from your documents.
-
----
-
-## ⭐ Key Features
-
-* **Dynamic Knowledge Base:** Upload any PDF to create a new, queryable knowledge base on the fly.
-* **Asynchronous Processing Pipeline:** Utilizes a robust backend queue system with **Redis** and **BullMQ** to handle document processing, text splitting, and vectorization as background jobs without blocking the user interface.
-* **AI-Powered Q&A:** Employs **Google's Gemini models** (via LangChain.js) for both generating vector embeddings (`text-embedding-004`) and powering the conversational chat (`gemini-1.5-flash`).
-* **Vector Similarity Search:** Performs efficient, real-time similarity searches using a **PostgreSQL** database supercharged with the `pgvector` extension to find the most relevant document chunks for any given question.
-* **Modern, Responsive Frontend:** A beautiful and fully responsive user interface built with the **Next.js 14+ App Router**, styled with **Tailwind CSS**, and brought to life with components from **shadcn/ui** and animations from **Framer Motion**.
-* **Full Document Management:** Includes complete CRUD (Create, Read, Delete) functionality, allowing users to manage their uploaded documents with individual and bulk delete options.
-
-## 🛠️ Tech Stack
-
-| Category      | Technology                                                                                                  |
-| :------------ | :---------------------------------------------------------------------------------------------------------- |
-| **Frontend** | [Next.js](https://nextjs.org/), [React](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Tailwind CSS](https://tailwindcss.com/), [shadcn/ui](https://ui.shadcn.com/), [Framer Motion](https://www.framer.com/motion/), [Axios](https://axios-http.com/) |
-| **Backend** | [NestJS](https://nestjs.com/), [Node.js](https://nodejs.org/), [TypeScript](https://www.typescriptlang.org/), [Prisma](https://www.prisma.io/)                                       |
-| **Database** | [PostgreSQL](https://www.postgresql.org/), [pgvector](https://github.com/pgvector/pgvector), [Redis](https://redis.io/)                                                             |
-| **AI** | [Google Gemini API](https://ai.google.dev/), [LangChain.js](https://js.langchain.com/)                       |
-| **DevOps & Tooling** | [Docker](https://www.docker.com/), [BullMQ](https://bullmq.io/)                                                                |
-
-
-## 🚀 Running the Project Locally
-
-### Prerequisites
-
-* [Node.js](https://nodejs.org/en) (v18 or later)
-* [Docker](https://www.docker.com/products/docker-desktop/) and Docker Compose
-* A Google AI API Key (from [Google AI Studio](https://aistudio.google.com/))
-
-### 1. Clone the Repository
+If you want to run everything locally in one go, just copy and paste this into your terminal:
 
 ```bash
-git clone [https://github.com/your-username/ai-knowledge-assistant.git](https://github.com/your-username/ai-knowledge-assistant.git)
+# Clone the repository
+git clone https://github.com/your-username/ai-knowledge-assistant.git
 cd ai-knowledge-assistant
+
+# Create backend .env file with required environment variables
+mkdir -p api
+cat > api/.env <<EOL
+# api/.env
+
+# This connection string is for the Docker setup
+DATABASE_URL="postgresql://myuser:mypassword@localhost:5432/mydatabase"
+
+# Get your key from Google AI Studio
+GOOGLE_API_KEY="AIzaSyYourSecretApiKeyHere..."
+EOL
+
+# Install backend dependencies
+cd api
+npm install
+
+# Install frontend dependencies
+cd ../web
+npm install
+
+# Go back to root
+cd ..
+
+# Start PostgreSQL and Redis via Docker
+docker-compose up -d
+
+# Run database migrations
+cd api
+npx prisma migrate dev
+
+# Start backend (Terminal A)
+echo "👉 Run this in Terminal A:"
+echo "cd api && npm run start:dev"
+
+# Start frontend (Terminal B)
+echo "👉 Run this in Terminal B:"
+echo "cd web && npm run dev"
+
+echo "✅ Setup complete! Visit http://localhost:3001 to start chatting with your PDFs."
